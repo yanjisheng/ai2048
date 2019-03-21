@@ -18,6 +18,7 @@
 struct GameStep *gameSteps = NULL; /*游戏的每一步*/
 int offset = 0;
 FILE *fp = NULL; /*游戏记录文件指针*/
+int fileSaveEnabled_ext = 0;/*是否保存游戏记录*/
 
 /*开始游戏*/
 struct GameStep *startGame(char *player, int fileSaveEnabled){
@@ -47,14 +48,17 @@ struct GameStep *startGame(char *player, int fileSaveEnabled){
 	strcat(fileName, t);
 	strcat(fileName, "_");
 	strcat(fileName, player);
+	fileSaveEnabled_ext = fileSaveEnabled;
 	if(fileSaveEnabled){
 		fp = fopen(fileName, "w"); /*创建文件记录游戏过程*/
 	}
 	struct GameStep *gameStep = getFirstGameStep(); /*获取游戏的第一步*/
 	copyGameStep(gameSteps, gameStep); /*存入游戏记录中*/
-	char *gameStepStr = GameStepToString(gameStep);
-	fputs(gameStepStr, fp); /*把游戏记录写入文件*/
-	free(gameStepStr);
+	if(fileSaveEnabled){
+		char *gameStepStr = GameStepToString(gameStep);
+		fputs(gameStepStr, fp); /*把游戏记录写入文件*/
+		free(gameStepStr);
+	}
 	free(gameStep); /*释放堆内存*/
 	return gameSteps + offset;
 }
@@ -69,13 +73,17 @@ struct GameStep *playGame(char direction){
 			offset = 0; /*重新分配堆内存*/
 		}
 		copyGameStep(gameSteps + offset, gameStep); /*把下一步存入游戏记录*/
-		char *gameStepStr = GameStepToString(gameStep);
-		fputs(gameStepStr, fp);
-		free(gameStepStr);
+		if(fileSaveEnabled_ext){
+			char *gameStepStr = GameStepToString(gameStep);
+			fputs(gameStepStr, fp);
+			free(gameStepStr);
+		}
 	}
 	if(isFinalGameStep(gameStep)) { /*游戏结束*/
-		fflush(fp);
-		fclose(fp);
+		if(fileSaveEnabled_ext){
+			fflush(fp);
+			fclose(fp);
+		}
 		free(gameSteps);
 		return gameStep;
 	}
